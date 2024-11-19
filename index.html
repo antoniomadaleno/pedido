@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Pedido Especial</title>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
         body {
             margin: 0;
@@ -155,48 +152,22 @@
         </div>
         <div class="contador">
             <img src="foto1.jpg" alt="Casal" id="casal-img">
-            <h2>Tempo Juntos</h2>
+            <h2>Tempo Oficialmente Juntos</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
-                "O amor não se vê com os olhos mas com o coração. 
-                Cada segundo ao teu lado é uma eternidade de felicidade. 
-                Obrigado por me fazeres tão feliz! ❤️"
+                "Ia para te pedir no fim de semana que íamos passar juntos,
+                 mas pelas circunstâncias da vida, não será possível nos próximos tempos. 
+                 Perante todo este tempo (tão intenso) que já passamos juntos, 
+                 achei que se poderia antecipar um pouco a minha ideia antes de ficar 
+                 umas semanas/meses de rabinho para o ar. Gosto muito de ti. 
+                 Obrigado por me fazeres tão feliz! ❤️"
             </div>
         </div>
     </div>
 
     <script>
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
         let startDate;
         let imageToggle = true;
-
-        // Check Firebase for existing date
-        db.ref('startDate').once('value').then((snapshot) => {
-            const savedDate = snapshot.val();
-            if (savedDate) {
-                startDate = new Date(savedDate);
-                document.querySelector('.pedido1').classList.remove('active');
-                document.querySelector('.pedido2').classList.remove('active');
-                document.querySelector('.contador').classList.add('active');
-                atualizarContador();
-                setInterval(atualizarContador, 1000);
-                setInterval(alternarImagem, 2000);
-            }
-        });
 
         function alternarImagem() {
             const img = document.getElementById('casal-img');
@@ -242,9 +213,28 @@
 
         function segundoPedido() {
             startDate = new Date();
-            // Save date to Firebase
-            db.ref('startDate').set(startDate.toISOString());
             
+            // Criar conteúdo para o arquivo
+            const dateContent = `const startDate = new Date('${startDate.toISOString()}');`;
+            
+            // Criar um blob com o conteúdo
+            const blob = new Blob([dateContent], { type: 'text/plain' });
+            
+            // Criar link para download
+            const downloadLink = document.createElement('a');
+            downloadLink.download = 'startDate.txt';
+            downloadLink.href = window.URL.createObjectURL(blob);
+            downloadLink.style.display = 'none';
+            
+            // Adicionar à página e clicar automaticamente
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            
+            // Limpar
+            document.body.removeChild(downloadLink);
+            window.URL.revokeObjectURL(downloadLink.href);
+            
+            // Continuar com o resto do código
             document.querySelector('.pedido2').classList.remove('active');
             document.querySelector('.contador').classList.add('active');
             
@@ -258,10 +248,7 @@
         }
 
         function limparCache() {
-            // Clear Firebase data
-            db.ref('startDate').remove().then(() => {
-                location.reload();
-            });
+            location.reload();
         }
 
         function atualizarContador() {
