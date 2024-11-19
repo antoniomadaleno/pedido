@@ -155,8 +155,9 @@
             <h2>Tempo Juntos</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
-                "Ia para te pedir no fim de semana que íamos passar juntos, mas pelas circunstâncias da vida, não será possível nos próximos tempos. Perante todo este tempo (tão intenso) que já passamos juntos, achei que se poderia antecipar um pouco a minha ideia antes de ficar umas semanas/meses de rabinho para o ar. Gosto muito de ti. Obrigado por me fazeres tão feliz! ❤️
-                (esperemos que o contador não deixe de funcionar, pois o meu código não é lá muito certo)"
+                "O amor não se vê com os olhos mas com o coração. 
+                Cada segundo ao teu lado é uma eternidade de felicidade. 
+                Obrigado por me fazeres tão feliz! ❤️"
             </div>
         </div>
     </div>
@@ -164,6 +165,10 @@
     <script>
         let startDate;
         let imageToggle = true;
+
+        // Verificar parâmetros da URL ao carregar
+        const params = new URLSearchParams(window.location.search);
+        const urlDate = params.get('startDate');
 
         function alternarImagem() {
             const img = document.getElementById('casal-img');
@@ -177,8 +182,8 @@
         }
 
         function fugir(btn) {
-            const maxX = 200; // Limite máximo de movimento horizontal
-            const maxY = 100; // Limite máximo de movimento vertical
+            const maxX = 200;
+            const maxY = 100;
             
             const randomX = (Math.random() * maxX) - maxX/2;
             const randomY = (Math.random() * maxY);
@@ -201,7 +206,6 @@
         function primeiroPedido() {
             document.querySelector('.pedido1').classList.remove('active');
             document.querySelector('.pedido2').classList.add('active');
-            // Reset posição dos botões
             document.querySelectorAll('.btn-nao').forEach(btn => {
                 btn.style.position = '';
                 btn.style.transform = '';
@@ -210,6 +214,11 @@
 
         function segundoPedido() {
             startDate = new Date();
+            // Atualiza URL com a data
+            const params = new URLSearchParams(window.location.search);
+            params.set('startDate', startDate.toISOString());
+            window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+            
             document.querySelector('.pedido2').classList.remove('active');
             document.querySelector('.contador').classList.add('active');
             
@@ -220,18 +229,17 @@
             atualizarContador();
             setInterval(atualizarContador, 1000);
             setInterval(alternarImagem, 2000);
-            localStorage.setItem('startDate', startDate.toISOString());
         }
 
         function limparCache() {
-            localStorage.removeItem('startDate');
+            window.history.replaceState({}, '', window.location.pathname);
             location.reload();
         }
 
         function atualizarContador() {
             const agora = new Date();
-            const storedDate = localStorage.getItem('startDate');
-            const diff = agora - (storedDate ? new Date(storedDate) : startDate);
+            const dataInicio = urlDate ? new Date(urlDate) : startDate;
+            const diff = agora - dataInicio;
             
             const anos = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
             const meses = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
@@ -243,9 +251,9 @@
                 `${anos} anos, ${meses} meses, ${dias} dias, ${minutos} minutos, ${segundos} segundos`;
         }
 
-        const storedDate = localStorage.getItem('startDate');
-        if (storedDate) {
-            startDate = new Date(storedDate);
+        // Inicializa se houver data na URL
+        if (urlDate) {
+            startDate = new Date(urlDate);
             document.querySelector('.pedido1').classList.remove('active');
             document.querySelector('.pedido2').classList.remove('active');
             document.querySelector('.contador').classList.add('active');
