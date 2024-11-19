@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Pedido Especial</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
         body {
             margin: 0;
@@ -163,12 +166,37 @@
     </div>
 
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let startDate;
         let imageToggle = true;
 
-        // Verificar parâmetros da URL ao carregar
-        const params = new URLSearchParams(window.location.search);
-        const urlDate = params.get('startDate');
+        // Check Firebase for existing date
+        db.ref('startDate').once('value').then((snapshot) => {
+            const savedDate = snapshot.val();
+            if (savedDate) {
+                startDate = new Date(savedDate);
+                document.querySelector('.pedido1').classList.remove('active');
+                document.querySelector('.pedido2').classList.remove('active');
+                document.querySelector('.contador').classList.add('active');
+                atualizarContador();
+                setInterval(atualizarContador, 1000);
+                setInterval(alternarImagem, 2000);
+            }
+        });
 
         function alternarImagem() {
             const img = document.getElementById('casal-img');
@@ -214,10 +242,8 @@
 
         function segundoPedido() {
             startDate = new Date();
-            // Atualiza URL com a data
-            const params = new URLSearchParams(window.location.search);
-            params.set('startDate', startDate.toISOString());
-            window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+            // Save date to Firebase
+            db.ref('startDate').set(startDate.toISOString());
             
             document.querySelector('.pedido2').classList.remove('active');
             document.querySelector('.contador').classList.add('active');
@@ -232,14 +258,15 @@
         }
 
         function limparCache() {
-            window.history.replaceState({}, '', window.location.pathname);
-            location.reload();
+            // Clear Firebase data
+            db.ref('startDate').remove().then(() => {
+                location.reload();
+            });
         }
 
         function atualizarContador() {
             const agora = new Date();
-            const dataInicio = urlDate ? new Date(urlDate) : startDate;
-            const diff = agora - dataInicio;
+            const diff = agora - startDate;
             
             const anos = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
             const meses = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
@@ -249,17 +276,6 @@
 
             document.getElementById('contador').textContent = 
                 `${anos} anos, ${meses} meses, ${dias} dias, ${minutos} minutos, ${segundos} segundos`;
-        }
-
-        // Inicializa se houver data na URL
-        if (urlDate) {
-            startDate = new Date(urlDate);
-            document.querySelector('.pedido1').classList.remove('active');
-            document.querySelector('.pedido2').classList.remove('active');
-            document.querySelector('.contador').classList.add('active');
-            atualizarContador();
-            setInterval(atualizarContador, 1000);
-            setInterval(alternarImagem, 2000);
         }
     </script>
 </body>
