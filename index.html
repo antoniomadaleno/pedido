@@ -94,7 +94,6 @@
     </div>
 
     <script>
-        // Substituir esta linha pela que foi gerada no primeiro programa
         const startDate = new Date('2024-11-19T22:47:00Z');
         let imageToggle = true;
 
@@ -103,7 +102,6 @@
             imageToggle = !imageToggle;
             img.style.opacity = '0';
             
-            // adicionar imagens aqui
             setTimeout(() => {
                 img.src = imageToggle ? 'foto1.jpg' : 'foto2.jpg';
                 img.style.opacity = '1';
@@ -117,18 +115,17 @@
             const anos = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
             const meses = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
             const dias = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
-            const minutos = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60));
+            const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const segundos = Math.floor((diff % (1000 * 60)) / 1000);
 
             document.getElementById('contador').textContent = 
-                `${anos} anos, ${meses} meses, ${dias} dias, ${minutos} minutos, ${segundos} segundos`;
+                `${anos} anos, ${meses} meses, ${dias} dias, ${horas} horas, ${minutos} minutos, ${segundos} segundos`;
         }
 
-        // Iniciar contadores
         setInterval(atualizarContador, 1000);
         setInterval(alternarImagem, 2000);
         atualizarContador();
     </script>
 </body>
 </html>
-
