@@ -7,72 +7,76 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-        }
-        .container {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
             background: 
                 radial-gradient(circle at 0% 0%, #ff0844 0%, transparent 50%),
                 radial-gradient(circle at 100% 0%, #8b0000 0%, transparent 50%),
                 radial-gradient(circle at 100% 100%, #ff0844 0%, transparent 50%),
-                radial-gradient(circle at 0% 100%, #8b0000 0%, transparent 50%);
-            background-color: #2b0000;
+                radial-gradient(circle at 0% 100%, #8b0000 0%, transparent 50%),
+                #2b0000;
             color: white;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
         }
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                linear-gradient(125deg, rgba(255,255,255,0.05) 0%, transparent 40%),
-                linear-gradient(45deg, transparent 60%, rgba(255,255,255,0.05) 100%);
-            pointer-events: none;
-        }
-        .contador {
-            position: relative;
-            z-index: 1;
+        .container {
+            max-width: 800px;
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            animation: fadeIn 1s;
+            gap: 1.5rem;
+        }
+        .contador {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
         .contador img {
-            width: 300px;
-            height: 300px;
-            border-radius: 10px;
-            margin: 20px;
-            object-fit: cover;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            transition: opacity 0.5s;
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.5s ease;
+            margin-bottom: 1.5rem;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .time {
-            font-size: 24px;
-            margin: 20px;
+            font-size: 2rem;
+            font-weight: bold;
             text-align: center;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.2);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            width: fit-content;
         }
         .quote {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-top: 20px;
-            max-width: 600px;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
             text-align: center;
             font-style: italic;
-            line-height: 1.4;
+            line-height: 1.6;
+            background: rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            max-width: 600px;
+        }
+        h2 {
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 1rem 0;
+            text-align: center;
+            width: 100%;
         }
     </style>
 </head>
