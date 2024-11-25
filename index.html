@@ -99,15 +99,16 @@
 
     <script>
         const startDate = new Date('2024-11-19T22:47:00Z');
-        let imageToggle = true;
+        let imageIndex = 0;
+        const images = ['foto1.jpg', 'foto2.jpg', 'foto3.jpg'];
 
         function alternarImagem() {
             const img = document.getElementById('casal-img');
-            imageToggle = !imageToggle;
             img.style.opacity = '0';
             
             setTimeout(() => {
-                img.src = imageToggle ? 'foto1.jpg' : 'foto2.jpg';
+                imageIndex = (imageIndex + 1) % images.length;
+                img.src = images[imageIndex];
                 img.style.opacity = '1';
             }, 500);
         }
