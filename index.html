@@ -67,7 +67,7 @@
             height: auto;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.5s ease;
+            transition: opacity 0.5s ease-in-out;
             margin-bottom: 1.5rem;
             display: block;
             margin-left: auto;
@@ -103,64 +103,113 @@
             text-align: center;
             width: 100%;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
     </style>
 </head>
 <body>
     <div class="background-photos">
         <img src="events/paredes_coura.jpg" alt="Foto de fundo 1" class="background-photo">
-        <img src="events/glinding_barnacles.png" alt="Foto de fundo 2" class="background-photo">
+        <img src="events/glinding_barnacles.jpg" alt="Foto de fundo 2" class="background-photo">
     </div>
 
     <div class="container">
         <div class="contador">
-            <img src="images/foto1.jpg" alt="Foto1" id="foto1">
+            <img src="" alt="Fotos do casal" id="gallery-img">
             <h2>Tempo com a menina mais linda do mundo</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
                 "Ia para te pedir no fim de semana que íamos passar juntos,
-                 mas pelas circunstâncias da vida, não será possível nos próximos tempos. 
-                 Perante todo este tempo (tão intenso) que já passamos juntos, 
-                 achei que se poderia antecipar um pouco a minha ideia antes de ficar 
-                 umas semanas/meses de rabinho para o ar. Gosto muito de ti. 
-                 Obrigado por me fazeres tão feliz! ❤️"
+                mas pelas circunstâncias da vida, não será possível nos próximos tempos. 
+                Perante todo este tempo (tão intenso) que já passamos juntos, 
+                achei que se poderia antecipar um pouco a minha ideia antes de ficar 
+                umas semanas/meses de rabinho para o ar. Gosto muito de ti. 
+                Obrigado por me fazeres tão feliz! ❤️"
             </div>
         </div>
     </div>
 
     <script>
-        const startDate = new Date('2024-11-19T22:47:00Z');
-        let imageIndex = 0;
-        const images = ['images/foto1.jpg', 'images/foto2.jpg', 'images/foto3.jpg', 'images/foto4.jpg', 'images/foto5.jpg', 'images/foto6.jpg'];
+        document.addEventListener('DOMContentLoaded', function() {
+            const startDate = new Date('2024-11-19T22:47:00Z');
+            let currentImageIndex = 0;
 
-        function alternarImagem() {
-            const img = document.getElementById('casal-img');
-            img.style.opacity = '0';
+            // Lista de todas as imagens da pasta images/
+            const images = Array.from({length: 20}, (_, i) => `images/foto${i + 1}.jpg`);
+            const galleryImg = document.getElementById('gallery-img');
+
+            function alternarImagem() {
+                if (images.length <= 1) return;
+
+                galleryImg.style.opacity = '0';
+
+                setTimeout(() => {
+                    // Tenta a próxima imagem
+                    currentImageIndex = (currentImageIndex + 1) % images.length;
+                    let attempts = 0;
+                    
+                    function tryLoadImage() {
+                        const img = new Image();
+                        img.onload = function() {
+                            galleryImg.src = images[currentImageIndex];
+                            galleryImg.style.opacity = '1';
+                        };
+                        img.onerror = function() {
+                            // Se a imagem não existir, tenta a próxima
+                            attempts++;
+                            if (attempts < images.length) {
+                                currentImageIndex = (currentImageIndex + 1) % images.length;
+                                tryLoadImage();
+                            }
+                        };
+                        img.src = images[currentImageIndex];
+                    }
+
+                    tryLoadImage();
+                }, 500);
+            }
+
+            function atualizarContador() {
+                const agora = new Date();
+                const diff = agora - startDate;
+                
+                const anos = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+                const meses = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+                const dias = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+                const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('contador').textContent = 
+                    `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
+            }
+
+            // Tentar carregar a primeira imagem
+            if (images.length > 0) {
+                galleryImg.src = images[0];
+            }
+
+            // Atualizar contador a cada segundo
+            setInterval(atualizarContador, 1000);
             
-            setTimeout(() => {
-                imageIndex = (imageIndex + 1) % images.length;
-                img.src = images[imageIndex];
-                img.style.opacity = '1';
-            }, 500);
-        }
-
-        function atualizarContador() {
-            const agora = new Date();
-            const diff = agora - startDate;
+            // Alternar imagem a cada 3 segundos
+            setInterval(alternarImagem, 2000);
             
-            const anos = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
-            const meses = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
-            const dias = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
-            const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const segundos = Math.floor((diff % (1000 * 60)) / 1000);
+            // Primeira atualização do contador
+            atualizarContador();
 
-            document.getElementById('contador').textContent = 
-                `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
-        }
-
-        setInterval(atualizarContador, 1000);
-        setInterval(alternarImagem, 2000);
-        atualizarContador();
+            // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
+            galleryImg.addEventListener('load', function() {
+                this.classList.add('fade-in');
+            });
+        });
     </script>
 </body>
 </html>
