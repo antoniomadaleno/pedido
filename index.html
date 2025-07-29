@@ -310,6 +310,7 @@
             let containerX = 0, containerY = 0;
             const container = document.querySelector('.container');
 
+            // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
                 isDragging = true;
                 startX = e.clientX - containerX;
@@ -332,6 +333,34 @@
             });
 
             document.addEventListener('mouseleave', function() {
+                isDragging = false;
+            });
+
+            // Touch events para mobile
+            container.addEventListener('touchstart', function(e) {
+                isDragging = true;
+                const touch = e.touches[0];
+                startX = touch.clientX - containerX;
+                startY = touch.clientY - containerY;
+                e.preventDefault();
+            });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                containerX = touch.clientX - startX;
+                containerY = touch.clientY - startY;
+                
+                container.style.transform = `translate(${containerX}px, ${containerY}px)`;
+            });
+
+            document.addEventListener('touchend', function() {
+                isDragging = false;
+            });
+
+            document.addEventListener('touchcancel', function() {
                 isDragging = false;
             });
         });
