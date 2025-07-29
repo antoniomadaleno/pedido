@@ -153,7 +153,7 @@
             let currentImageIndex = 0;
 
             // Lista de todas as imagens da pasta images/
-            const images = Array.from({length: 20}, (_, i) => `images/foto${i + 1}.jpg`);
+            const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
 
             function alternarImagem() {
@@ -210,8 +210,8 @@
             // Atualizar contador a cada segundo
             setInterval(atualizarContador, 1000);
             
-            // Alternar imagem a cada 2.5 segundos
-            setInterval(alternarImagem, 2500);
+            // Alternar imagem a cada 1.5 segundos
+            setInterval(alternarImagem, 1500);
             
             // Primeira atualização do contador
             atualizarContador();
