@@ -9,7 +9,8 @@
             margin: 0;
             font-family: Arial, sans-serif;
             min-height: 100vh;
-            overflow-y: auto;
+            min-width: 100vw;
+            overflow: hidden;
             background: #2b0000;
             color: white;
             display: flex;
@@ -45,12 +46,19 @@
         .container {
             max-width: 800px;
             width: 100%;
+            min-width: 600px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 1.5rem;
             position: relative;
             z-index: 1;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .container:active {
+            cursor: grabbing;
         }
 
         .contador {
@@ -65,7 +73,7 @@
 
         .contador img {
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
             height: auto;
             min-height: 200px;
             border-radius: 15px;
@@ -126,8 +134,8 @@
             }
             
             .contador img {
-                max-width: 300px;
-                min-height: 150px;
+                max-width: 250px;
+                min-height: 130px;
             }
             
             .time {
@@ -285,8 +293,8 @@
             // Atualizar contador a cada segundo
             setInterval(atualizarContador, 1000);
             
-            // Alternar imagem a cada 1.2 segundos
-            setInterval(alternarImagem, 1200);
+            // Alternar imagem a cada 1 segundos
+            setInterval(alternarImagem, 1000);
             
             // Primeira atualização do contador
             atualizarContador();
@@ -294,6 +302,37 @@
             // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
             galleryImg.addEventListener('load', function() {
                 this.classList.add('fade-in');
+            });
+
+            // Funcionalidade de drag para mover o container principal
+            let isDragging = false;
+            let startX, startY;
+            let containerX = 0, containerY = 0;
+            const container = document.querySelector('.container');
+
+            container.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX - containerX;
+                startY = e.clientY - containerY;
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                containerX = e.clientX - startX;
+                containerY = e.clientY - startY;
+                
+                container.style.transform = `translate(${containerX}px, ${containerY}px)`;
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+            });
+
+            document.addEventListener('mouseleave', function() {
+                isDragging = false;
             });
         });
     </script>
