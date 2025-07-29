@@ -27,13 +27,12 @@
             height: 100%;
             z-index: 0;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            grid-template-rows: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 3px;
-            padding: 3px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            grid-auto-rows: 100px;
+            gap: 5px;
+            padding: 5px;
             pointer-events: none;
             opacity: 0.35;
-            overflow: hidden;
         }
 
         .background-photo {
@@ -117,7 +116,7 @@
             
             .background-photos {
                 grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-                grid-template-rows: repeat(auto-fill, minmax(60px, 1fr));
+                grid-auto-rows: 60px;
                 gap: 2px;
                 padding: 2px;
             }
@@ -149,7 +148,7 @@
         @media (max-width: 480px) {
             .background-photos {
                 grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-                grid-template-rows: repeat(auto-fill, minmax(50px, 1fr));
+                grid-auto-rows: 50px;
             }
             
             .contador img {
@@ -286,8 +285,8 @@
             // Atualizar contador a cada segundo
             setInterval(atualizarContador, 1000);
             
-            // Alternar imagem a cada 1 segundos
-            setInterval(alternarImagem, 1000);
+            // Alternar imagem a cada 1.2 segundos
+            setInterval(alternarImagem, 1200);
             
             // Primeira atualização do contador
             atualizarContador();
