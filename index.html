@@ -13,9 +13,6 @@
             overflow: hidden;
             background: #2b0000;
             color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 1rem;
             position: relative;
         }
@@ -51,7 +48,10 @@
             flex-direction: column;
             align-items: center;
             gap: 1.5rem;
-            position: relative;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             z-index: 1;
             cursor: grab;
             user-select: none;
@@ -325,7 +325,7 @@
                 containerX = e.clientX - startX;
                 containerY = e.clientY - startY;
                 
-                container.style.transform = `translate(${containerX}px, ${containerY}px)`;
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
             });
 
             document.addEventListener('mouseup', function() {
@@ -343,7 +343,7 @@
                 startX = touch.clientX - containerX;
                 startY = touch.clientY - containerY;
                 e.preventDefault();
-            });
+            }, { passive: false });
 
             document.addEventListener('touchmove', function(e) {
                 if (!isDragging) return;
@@ -353,8 +353,8 @@
                 containerX = touch.clientX - startX;
                 containerY = touch.clientY - startY;
                 
-                container.style.transform = `translate(${containerX}px, ${containerY}px)`;
-            });
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
+            }, { passive: false });
 
             document.addEventListener('touchend', function() {
                 isDragging = false;
