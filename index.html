@@ -407,11 +407,22 @@
                         console.log('Transitioning from zoom to drag mode');
                     }
                 } else if (e.touches.length === 0) {
-                    // Sem dedos no ecrã - limpar tudo
+                    // Sem dedos no ecrã - voltar ao tamanho original
                     isZooming = false;
                     isDragging = false;
                     lastTouchCenter = null;
-                    console.log('Final scale:', containerScale.toFixed(2), 'Position:', containerX.toFixed(0), containerY.toFixed(0));
+                    
+                    // Sempre voltar ao zoom original (1.0x) com transição suave
+                    containerScale = 1;
+                    container.style.transition = 'transform 0.3s ease-out';
+                    updateTransform();
+                    
+                    // Remover transição após animação
+                    setTimeout(() => {
+                        container.style.transition = '';
+                    }, 300);
+                    
+                    console.log('Reset to original size - Position:', containerX.toFixed(0), containerY.toFixed(0));
                 }
             });
 
@@ -438,15 +449,25 @@
                 isDragging = false;
             });
 
-            // Double tap para reset
+            // Double tap para reset posição E zoom
             let lastTap = 0;
             container.addEventListener('touchend', function(e) {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 
+                // Double tap para reset TUDO (posição + zoom)
                 if (tapLength < 500 && tapLength > 0 && e.touches.length === 0) {
                     containerScale = 1;
+                    containerX = 0;
+                    containerY = 0;
+                    container.style.transition = 'transform 0.3s ease-out';
                     updateTransform();
+                    
+                    setTimeout(() => {
+                        container.style.transition = '';
+                    }, 300);
+                    
+                    console.log('Double tap - Reset position and scale');
                 }
                 
                 lastTap = currentTime;
