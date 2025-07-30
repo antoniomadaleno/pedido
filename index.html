@@ -263,7 +263,7 @@
             // Thresholds de zoom
             const MIN_ZOOM = 0.3;  // Zoom mínimo permitido
             const MAX_ZOOM = 3.0;  // Zoom máximo permitido
-            const ZOOM_SENSITIVITY = 0.5; // Sensibilidade do zoom (menor = mais suave)
+            const ZOOM_SENSITIVITY = 1.2; // Sensibilidade do zoom (maior = mais responsivo)
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -335,7 +335,7 @@
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
                     let scaleChange = currentDistance / initialDistance;
                     
-                    // Aplicar sensibilidade para zoom mais suave
+                    // Aplicar sensibilidade - agora mais responsivo
                     scaleChange = 1 + (scaleChange - 1) * ZOOM_SENSITIVITY;
                     
                     let newScale = lastScale * scaleChange;
@@ -343,9 +343,9 @@
                     // Aplicar thresholds de zoom
                     newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
                     
-                    // Aplicar o zoom imediatamente
+                    // Aplicar o zoom imediatamente e atualizar containerScale
                     containerScale = newScale;
-                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${newScale})`;
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
                     container.style.transition = '';
                 }
             }, { passive: false });
@@ -354,22 +354,17 @@
                 if (isZooming) {
                     isZooming = false;
                     
-                    // A escala já foi atualizada durante o movimento
+                    // Garantir que a escala atual é preservada
+                    // containerScale já foi atualizado durante touchmove
+                    
                     // Aplicar thresholds finais por segurança
-                    if (containerScale < MIN_ZOOM) {
-                        containerScale = MIN_ZOOM;
-                    } else if (containerScale > MAX_ZOOM) {
-                        containerScale = MAX_ZOOM;
-                    }
+                    containerScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, containerScale));
                     
-                    // Adicionar transição suave
-                    container.style.transition = 'transform 0.2s ease-out';
+                    // Aplicar sem transição para evitar "snap back"
                     container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
+                    container.style.transition = '';
                     
-                    // Remover transição após um breve delay
-                    setTimeout(() => {
-                        container.style.transition = '';
-                    }, 200);
+                    console.log('Zoom final:', containerScale); // Para debug
                 }
             });
 
