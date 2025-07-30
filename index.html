@@ -55,7 +55,6 @@
             z-index: 1;
             cursor: grab;
             user-select: none;
-            touch-action: none;
         }
 
         .container:active {
@@ -235,7 +234,7 @@
 
     <div class="container">
         <div class="contador">
-            <img src="" alt="Fotos do casal" id="gallery-img">
+            <img src="" alt="Error loading images" id="gallery-img">
             <h2>Timer para a eternidade</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
@@ -252,26 +251,6 @@
             // Lista de todas as imagens da pasta images/
             const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
-            const container = document.querySelector('.container');
-
-            // Variáveis para transformações
-            let containerScale = 1;
-            let containerX = 0;
-            let containerY = 0;
-            let isZooming = false;
-            let isDragging = false;
-
-            // Zoom variables
-            let initialDistance = 0;
-            let initialScale = 1;
-            
-            // Limites
-            const MIN_ZOOM = 0.4;
-            const MAX_ZOOM = 2.5;
-
-            function updateTransform() {
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
-            }
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -279,6 +258,7 @@
                 galleryImg.style.opacity = '0';
 
                 setTimeout(() => {
+                    // Tenta a próxima imagem
                     currentImageIndex = (currentImageIndex + 1) % images.length;
                     let attempts = 0;
                     
@@ -289,6 +269,7 @@
                             galleryImg.style.opacity = '1';
                         };
                         img.onerror = function() {
+                            // Se a imagem não existir, tenta a próxima
                             attempts++;
                             if (attempts < images.length) {
                                 currentImageIndex = (currentImageIndex + 1) % images.length;
@@ -317,69 +298,46 @@
                     `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
             }
 
-            function getDistance(touch1, touch2) {
-                const dx = touch1.clientX - touch2.clientX;
-                const dy = touch1.clientY - touch2.clientY;
-                return Math.sqrt(dx * dx + dy * dy);
+            // Tentar carregar a primeira imagem
+            if (images.length > 0) {
+                const img = new Image();
+                img.onload = function() {
+                    galleryImg.src = images[0];
+                    galleryImg.style.opacity = '1';
+                };
+                img.onerror = function() {
+                    // Se a primeira imagem não existir, tenta encontrar uma que exista
+                    alternarImagem();
+                };
+                img.src = images[0];
             }
 
-            // Touch Events
-            container.addEventListener('touchstart', function(e) {
-                if (e.touches.length === 1) {
-                    // Single touch - drag
-                    isDragging = true;
-                    const touch = e.touches[0];
-                    startX = touch.clientX - containerX;
-                    startY = touch.clientY - containerY;
-                } else if (e.touches.length === 2) {
-                    // Two fingers - zoom
-                    e.preventDefault();
-                    isZooming = true;
-                    isDragging = false;
-                    initialDistance = getDistance(e.touches[0], e.touches[1]);
-                    initialScale = containerScale;
-                }
-            }, { passive: false });
+            // Atualizar contador a cada segundo
+            setInterval(atualizarContador, 1000);
+            
+            // Alternar imagem a cada 1 segundos
+            setInterval(alternarImagem, 1300);
+            
+            // Primeira atualização do contador
+            atualizarContador();
 
-            container.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 1 && isDragging && !isZooming) {
-                    // Drag
-                    const touch = e.touches[0];
-                    containerX = touch.clientX - startX;
-                    containerY = touch.clientY - startY;
-                    updateTransform();
-                } else if (e.touches.length === 2 && isZooming) {
-                    // Zoom
-                    e.preventDefault();
-                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                    const scaleChange = currentDistance / initialDistance;
-                    
-                    let newScale = initialScale * scaleChange;
-                    newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
-                    
-                    containerScale = newScale;
-                    updateTransform();
-                }
-            }, { passive: false });
-
-            container.addEventListener('touchend', function(e) {
-                if (e.touches.length === 0) {
-                    isZooming = false;
-                    isDragging = false;
-                    console.log('Final scale:', containerScale.toFixed(2));
-                }
+            // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
+            galleryImg.addEventListener('load', function() {
+                this.classList.add('fade-in');
             });
 
-            // Mouse Events para PC
+            // Funcionalidade de drag para mover o container principal
+            let isDragging = false;
             let startX, startY;
+            let containerX = 0, containerY = 0;
+            const container = document.querySelector('.container');
 
+            // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
-                if (!isZooming) {
-                    isDragging = true;
-                    startX = e.clientX - containerX;
-                    startY = e.clientY - containerY;
-                    e.preventDefault();
-                }
+                isDragging = true;
+                startX = e.clientX - containerX;
+                startY = e.clientY - containerY;
+                e.preventDefault();
             });
 
             document.addEventListener('mousemove', function(e) {
@@ -388,47 +346,44 @@
                 
                 containerX = e.clientX - startX;
                 containerY = e.clientY - startY;
-                updateTransform();
+                
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
             });
 
             document.addEventListener('mouseup', function() {
                 isDragging = false;
             });
 
-            // Double tap para reset
-            let lastTap = 0;
-            container.addEventListener('touchend', function(e) {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTap;
-                
-                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0) {
-                    containerScale = 1;
-                    updateTransform();
-                }
-                
-                lastTap = currentTime;
+            document.addEventListener('mouseleave', function() {
+                isDragging = false;
             });
 
-            // Carregar primeira imagem
-            if (images.length > 0) {
-                const img = new Image();
-                img.onload = function() {
-                    galleryImg.src = images[0];
-                    galleryImg.style.opacity = '1';
-                };
-                img.onerror = function() {
-                    alternarImagem();
-                };
-                img.src = images[0];
-            }
+            // Touch events para mobile
+            container.addEventListener('touchstart', function(e) {
+                isDragging = true;
+                const touch = e.touches[0];
+                startX = touch.clientX - containerX;
+                startY = touch.clientY - containerY;
+                e.preventDefault();
+            }, { passive: false });
 
-            // Timers
-            setInterval(atualizarContador, 1000);
-            setInterval(alternarImagem, 1300);
-            atualizarContador();
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const touch = e.touches[0];
+                containerX = touch.clientX - startX;
+                containerY = touch.clientY - startY;
+                
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
+            }, { passive: false });
 
-            galleryImg.addEventListener('load', function() {
-                this.classList.add('fade-in');
+            document.addEventListener('touchend', function() {
+                isDragging = false;
+            });
+
+            document.addEventListener('touchcancel', function() {
+                isDragging = false;
             });
         });
     </script>
