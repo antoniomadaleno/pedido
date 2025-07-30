@@ -55,6 +55,7 @@
             z-index: 1;
             cursor: grab;
             user-select: none;
+            touch-action: none;
         }
 
         .container:active {
@@ -234,7 +235,7 @@
 
     <div class="container">
         <div class="contador">
-            <img src="" alt="Error loading images" id="gallery-img">
+            <img src="" alt="Fotos do casal" id="gallery-img">
             <h2>Timer para a eternidade</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
@@ -251,6 +252,12 @@
             // Lista de todas as imagens da pasta images/
             const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
+            const container = document.querySelector('.container');
+
+            // Variáveis para zoom do container
+            let containerScale = 1;
+            let initialDistance = 0;
+            let isZooming = false;
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -298,6 +305,73 @@
                     `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
             }
 
+            // Função para calcular distância entre dois pontos de toque
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Funcionalidade de zoom para todo o container no mobile
+            container.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    isZooming = true;
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2 && isZooming) {
+                    e.preventDefault();
+                    
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scaleChange = currentDistance / initialDistance;
+                    const newScale = Math.min(Math.max(containerScale * scaleChange, 0.3), 2.5);
+                    
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${newScale})`;
+                    container.style.transition = '';
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', function(e) {
+                if (isZooming) {
+                    isZooming = false;
+                    
+                    // Atualizar escala atual baseada no transform
+                    const transform = window.getComputedStyle(container).transform;
+                    if (transform !== 'none') {
+                        const matrix = new DOMMatrix(transform);
+                        containerScale = matrix.a; // a é o valor de scale X
+                    }
+                    
+                    // Adicionar transição suave
+                    container.style.transition = 'transform 0.3s ease-out';
+                    
+                    // Se a escala for muito pequena, voltar ao normal
+                    if (containerScale < 0.5) {
+                        containerScale = 1;
+                        container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
+                    }
+                }
+            });
+
+            // Double tap para resetar zoom do container
+            let lastTap = 0;
+            container.addEventListener('touchend', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0 && !isDragging) {
+                    e.preventDefault();
+                    containerScale = 1;
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
+                    container.style.transition = 'transform 0.3s ease-out';
+                }
+                
+                lastTap = currentTime;
+            });
+
             // Tentar carregar a primeira imagem
             if (images.length > 0) {
                 const img = new Image();
@@ -330,14 +404,16 @@
             let isDragging = false;
             let startX, startY;
             let containerX = 0, containerY = 0;
-            const container = document.querySelector('.container');
 
             // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
-                isDragging = true;
-                startX = e.clientX - containerX;
-                startY = e.clientY - containerY;
-                e.preventDefault();
+                // Só arrastar se não estiver fazendo zoom
+                if (!isZooming) {
+                    isDragging = true;
+                    startX = e.clientX - containerX;
+                    startY = e.clientY - containerY;
+                    e.preventDefault();
+                }
             });
 
             document.addEventListener('mousemove', function(e) {
@@ -347,7 +423,7 @@
                 containerX = e.clientX - startX;
                 containerY = e.clientY - startY;
                 
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
             });
 
             document.addEventListener('mouseup', function() {
@@ -358,25 +434,26 @@
                 isDragging = false;
             });
 
-            // Touch events para mobile
+            // Touch events para mobile (apenas para arrastar quando não está fazendo zoom)
             container.addEventListener('touchstart', function(e) {
-                isDragging = true;
-                const touch = e.touches[0];
-                startX = touch.clientX - containerX;
-                startY = touch.clientY - containerY;
-                e.preventDefault();
-            }, { passive: false });
+                // Só arrastar se for toque de um dedo e não estiver fazendo zoom
+                if (e.touches.length === 1 && !isZooming) {
+                    isDragging = true;
+                    const touch = e.touches[0];
+                    startX = touch.clientX - containerX;
+                    startY = touch.clientY - containerY;
+                }
+            }, { passive: true });
 
             document.addEventListener('touchmove', function(e) {
-                if (!isDragging) return;
-                e.preventDefault();
+                if (!isDragging || e.touches.length > 1 || isZooming) return;
                 
                 const touch = e.touches[0];
                 containerX = touch.clientX - startX;
                 containerY = touch.clientY - startY;
                 
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
-            }, { passive: false });
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
+            }, { passive: true });
 
             document.addEventListener('touchend', function() {
                 isDragging = false;
