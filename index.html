@@ -258,6 +258,10 @@
             let containerScale = 1;
             let initialDistance = 0;
             let isZooming = false;
+            
+            // Thresholds de zoom
+            const MIN_ZOOM = 0.5;  // Zoom mínimo permitido
+            const MAX_ZOOM = 2.0;  // Zoom máximo permitido
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -327,7 +331,10 @@
                     
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
                     const scaleChange = currentDistance / initialDistance;
-                    const newScale = Math.min(Math.max(containerScale * scaleChange, 0.3), 2.5);
+                    let newScale = containerScale * scaleChange;
+                    
+                    // Aplicar thresholds de zoom
+                    newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
                     
                     container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${newScale})`;
                     container.style.transition = '';
@@ -342,29 +349,34 @@
                     const transform = window.getComputedStyle(container).transform;
                     if (transform !== 'none') {
                         const matrix = new DOMMatrix(transform);
-                        containerScale = matrix.a; // a é o valor de scale X
+                        let newScale = matrix.a; // a é o valor de scale X
+                        
+                        // Aplicar thresholds finais
+                        if (newScale < MIN_ZOOM) {
+                            newScale = MIN_ZOOM;
+                        } else if (newScale > MAX_ZOOM) {
+                            newScale = MAX_ZOOM;
+                        }
+                        
+                        containerScale = newScale;
                     }
                     
-                    // Adicionar transição suave
+                    // Adicionar transição suave mantendo a posição atual
                     container.style.transition = 'transform 0.3s ease-out';
-                    
-                    // Se a escala for muito pequena, voltar ao normal
-                    if (containerScale < 0.5) {
-                        containerScale = 1;
-                        container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
-                    }
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
                 }
             });
 
-            // Double tap para resetar zoom do container
+            // Double tap para resetar zoom do container (mantendo posição)
             let lastTap = 0;
             container.addEventListener('touchend', function(e) {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 
-                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0 && !isDragging) {
+                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0 && !isDragging && !isZooming) {
                     e.preventDefault();
                     containerScale = 1;
+                    // Resetar zoom mas manter a posição atual
                     container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
                     container.style.transition = 'transform 0.3s ease-out';
                 }
