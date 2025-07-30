@@ -268,8 +268,8 @@
             const galleryImg = document.getElementById('gallery-img');
             const imageContainer = document.querySelector('.image-container');
 
-            // Variáveis para zoom
-            let currentScale = 1;
+            // Variáveis para zoom do container
+            let containerScale = 1;
             let initialDistance = 0;
             let isZooming = false;
 
@@ -326,8 +326,8 @@
                 return Math.sqrt(dx * dx + dy * dy);
             }
 
-            // Funcionalidade de zoom para mobile
-            imageContainer.addEventListener('touchstart', function(e) {
+            // Funcionalidade de zoom para todo o container no mobile
+            container.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 2) {
                     e.preventDefault();
                     isZooming = true;
@@ -335,52 +335,52 @@
                 }
             }, { passive: false });
 
-            imageContainer.addEventListener('touchmove', function(e) {
+            container.addEventListener('touchmove', function(e) {
                 if (e.touches.length === 2 && isZooming) {
                     e.preventDefault();
                     
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
                     const scaleChange = currentDistance / initialDistance;
-                    const newScale = Math.min(Math.max(currentScale * scaleChange, 0.5), 3);
+                    const newScale = Math.min(Math.max(containerScale * scaleChange, 0.3), 2.5);
                     
-                    galleryImg.style.transform = `scale(${newScale})`;
-                    galleryImg.style.transition = '';
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${newScale})`;
+                    container.style.transition = '';
                 }
             }, { passive: false });
 
-            imageContainer.addEventListener('touchend', function(e) {
+            container.addEventListener('touchend', function(e) {
                 if (isZooming) {
                     isZooming = false;
                     
                     // Atualizar escala atual baseada no transform
-                    const transform = window.getComputedStyle(galleryImg).transform;
+                    const transform = window.getComputedStyle(container).transform;
                     if (transform !== 'none') {
                         const matrix = new DOMMatrix(transform);
-                        currentScale = matrix.a; // a é o valor de scale X
+                        containerScale = matrix.a; // a é o valor de scale X
                     }
                     
-                    // Adicionar transição suave para voltar ao tamanho normal se necessário
-                    galleryImg.style.transition = 'transform 0.3s ease-out';
+                    // Adicionar transição suave
+                    container.style.transition = 'transform 0.3s ease-out';
                     
                     // Se a escala for muito pequena, voltar ao normal
-                    if (currentScale < 0.8) {
-                        currentScale = 1;
-                        galleryImg.style.transform = 'scale(1)';
+                    if (containerScale < 0.5) {
+                        containerScale = 1;
+                        container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
                     }
                 }
             });
 
-            // Double tap para resetar zoom
+            // Double tap para resetar zoom do container
             let lastTap = 0;
-            imageContainer.addEventListener('touchend', function(e) {
+            container.addEventListener('touchend', function(e) {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 
-                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0) {
+                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0 && !isDragging) {
                     e.preventDefault();
-                    currentScale = 1;
-                    galleryImg.style.transform = 'scale(1)';
-                    galleryImg.style.transition = 'transform 0.3s ease-out';
+                    containerScale = 1;
+                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
+                    container.style.transition = 'transform 0.3s ease-out';
                 }
                 
                 lastTap = currentTime;
@@ -412,10 +412,6 @@
             // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
             galleryImg.addEventListener('load', function() {
                 this.classList.add('fade-in');
-                // Reset zoom quando trocar de imagem
-                currentScale = 1;
-                this.style.transform = 'scale(1)';
-                this.style.transition = 'transform 0.3s ease-out';
             });
 
             // Funcionalidade de drag para mover o container principal
@@ -426,13 +422,13 @@
 
             // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
-                // Não arrastar se estiver tocando na imagem
-                if (e.target === galleryImg || e.target === imageContainer) return;
-                
-                isDragging = true;
-                startX = e.clientX - containerX;
-                startY = e.clientY - containerY;
-                e.preventDefault();
+                // Só arrastar se for toque de um dedo e não estiver fazendo zoom
+                if (!isZooming) {
+                    isDragging = true;
+                    startX = e.clientX - containerX;
+                    startY = e.clientY - containerY;
+                    e.preventDefault();
+                }
             });
 
             document.addEventListener('mousemove', function(e) {
@@ -442,7 +438,7 @@
                 containerX = e.clientX - startX;
                 containerY = e.clientY - startY;
                 
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
             });
 
             document.addEventListener('mouseup', function() {
@@ -453,25 +449,25 @@
                 isDragging = false;
             });
 
-            // Touch events para mobile (apenas para arrastar o container, não a imagem)
+            // Touch events para mobile (apenas para arrastar o container quando não está fazendo zoom)
             container.addEventListener('touchstart', function(e) {
-                // Não arrastar se estiver tocando na imagem ou se for multi-touch
-                if (e.target === galleryImg || e.target === imageContainer || e.touches.length > 1) return;
-                
-                isDragging = true;
-                const touch = e.touches[0];
-                startX = touch.clientX - containerX;
-                startY = touch.clientY - containerY;
+                // Só arrastar se for toque de um dedo e não estiver fazendo zoom
+                if (e.touches.length === 1 && !isZooming) {
+                    isDragging = true;
+                    const touch = e.touches[0];
+                    startX = touch.clientX - containerX;
+                    startY = touch.clientY - containerY;
+                }
             }, { passive: true });
 
             document.addEventListener('touchmove', function(e) {
-                if (!isDragging || e.touches.length > 1) return;
+                if (!isDragging || e.touches.length > 1 || isZooming) return;
                 
                 const touch = e.touches[0];
                 containerX = touch.clientX - startX;
                 containerY = touch.clientY - startY;
                 
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
             }, { passive: true });
 
             document.addEventListener('touchend', function() {
