@@ -71,19 +71,26 @@
             border-radius: 15px;
         }
 
-        .contador img {
+        .image-container {
+            position: relative;
             width: 100%;
             max-width: 500px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            border-radius: 15px;
+            touch-action: none;
+        }
+
+        .contador img {
+            width: 100%;
             height: auto;
             min-height: 200px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: opacity 0.5s ease-in-out;
-            margin-bottom: 1.5rem;
             display: block;
-            margin-left: auto;
-            margin-right: auto;
             object-fit: cover;
+            transform-origin: center center;
         }
 
         .time {
@@ -138,8 +145,11 @@
                 padding: 0.5rem;
             }
             
-            .contador img {
+            .image-container {
                 max-width: 250px;
+            }
+            
+            .contador img {
                 min-height: 130px;
             }
             
@@ -177,8 +187,11 @@
                 grid-auto-rows: 50px;
             }
             
-            .contador img {
+            .image-container {
                 max-width: 230px;
+            }
+            
+            .contador img {
                 min-height: 115px;
             }
             
@@ -234,7 +247,9 @@
 
     <div class="container">
         <div class="contador">
-            <img src="" alt="Fotos do casal" id="gallery-img">
+            <div class="image-container">
+                <img src="" alt="Fotos do casal" id="gallery-img">
+            </div>
             <h2>Timer para a eternidade</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
@@ -251,6 +266,12 @@
             // Lista de todas as imagens da pasta images/
             const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
+            const imageContainer = document.querySelector('.image-container');
+
+            // Variáveis para zoom
+            let currentScale = 1;
+            let initialDistance = 0;
+            let isZooming = false;
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -298,6 +319,73 @@
                     `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
             }
 
+            // Função para calcular distância entre dois pontos de toque
+            function getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            // Funcionalidade de zoom para mobile
+            imageContainer.addEventListener('touchstart', function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    isZooming = true;
+                    initialDistance = getDistance(e.touches[0], e.touches[1]);
+                }
+            }, { passive: false });
+
+            imageContainer.addEventListener('touchmove', function(e) {
+                if (e.touches.length === 2 && isZooming) {
+                    e.preventDefault();
+                    
+                    const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                    const scaleChange = currentDistance / initialDistance;
+                    const newScale = Math.min(Math.max(currentScale * scaleChange, 0.5), 3);
+                    
+                    galleryImg.style.transform = `scale(${newScale})`;
+                    galleryImg.style.transition = '';
+                }
+            }, { passive: false });
+
+            imageContainer.addEventListener('touchend', function(e) {
+                if (isZooming) {
+                    isZooming = false;
+                    
+                    // Atualizar escala atual baseada no transform
+                    const transform = window.getComputedStyle(galleryImg).transform;
+                    if (transform !== 'none') {
+                        const matrix = new DOMMatrix(transform);
+                        currentScale = matrix.a; // a é o valor de scale X
+                    }
+                    
+                    // Adicionar transição suave para voltar ao tamanho normal se necessário
+                    galleryImg.style.transition = 'transform 0.3s ease-out';
+                    
+                    // Se a escala for muito pequena, voltar ao normal
+                    if (currentScale < 0.8) {
+                        currentScale = 1;
+                        galleryImg.style.transform = 'scale(1)';
+                    }
+                }
+            });
+
+            // Double tap para resetar zoom
+            let lastTap = 0;
+            imageContainer.addEventListener('touchend', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0) {
+                    e.preventDefault();
+                    currentScale = 1;
+                    galleryImg.style.transform = 'scale(1)';
+                    galleryImg.style.transition = 'transform 0.3s ease-out';
+                }
+                
+                lastTap = currentTime;
+            });
+
             // Tentar carregar a primeira imagem
             if (images.length > 0) {
                 const img = new Image();
@@ -324,6 +412,10 @@
             // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
             galleryImg.addEventListener('load', function() {
                 this.classList.add('fade-in');
+                // Reset zoom quando trocar de imagem
+                currentScale = 1;
+                this.style.transform = 'scale(1)';
+                this.style.transition = 'transform 0.3s ease-out';
             });
 
             // Funcionalidade de drag para mover o container principal
@@ -334,6 +426,9 @@
 
             // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
+                // Não arrastar se estiver tocando na imagem
+                if (e.target === galleryImg || e.target === imageContainer) return;
+                
                 isDragging = true;
                 startX = e.clientX - containerX;
                 startY = e.clientY - containerY;
@@ -358,25 +453,26 @@
                 isDragging = false;
             });
 
-            // Touch events para mobile
+            // Touch events para mobile (apenas para arrastar o container, não a imagem)
             container.addEventListener('touchstart', function(e) {
+                // Não arrastar se estiver tocando na imagem ou se for multi-touch
+                if (e.target === galleryImg || e.target === imageContainer || e.touches.length > 1) return;
+                
                 isDragging = true;
                 const touch = e.touches[0];
                 startX = touch.clientX - containerX;
                 startY = touch.clientY - containerY;
-                e.preventDefault();
-            }, { passive: false });
+            }, { passive: true });
 
             document.addEventListener('touchmove', function(e) {
-                if (!isDragging) return;
-                e.preventDefault();
+                if (!isDragging || e.touches.length > 1) return;
                 
                 const touch = e.touches[0];
                 containerX = touch.clientX - startX;
                 containerY = touch.clientY - startY;
                 
                 container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px))`;
-            }, { passive: false });
+            }, { passive: true });
 
             document.addEventListener('touchend', function() {
                 isDragging = false;
