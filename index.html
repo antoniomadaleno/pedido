@@ -388,24 +388,26 @@
             // Touch Events
             let startX, startY;
             let lastTouchCenter = null;
-            let tapTimeout;
+            let touchStartTime = 0;
+            let touchStartPos = { x: 0, y: 0 };
+            let hasMoved = false;
 
             container.addEventListener('touchstart', function(e) {
+                touchStartTime = Date.now();
+                hasMoved = false;
+                
                 if (e.touches.length === 1) {
-                    // Single touch - pode ser tap ou drag
-                    if (!isZooming) {
-                        const touch = e.touches[0];
-                        startX = touch.clientX - containerX;
-                        startY = touch.clientY - containerY;
-                        
-                        // Preparar para possível drag (mas não ativar ainda)
-                        // Vamos esperar pelo movimento para decidir se é tap ou drag
-                    }
+                    // Single touch
+                    const touch = e.touches[0];
+                    touchStartPos = { x: touch.clientX, y: touch.clientY };
+                    startX = touch.clientX - containerX;
+                    startY = touch.clientY - containerY;
                 } else if (e.touches.length === 2) {
                     // Two fingers - zoom
                     e.preventDefault();
                     isZooming = true;
                     isDragging = false;
+                    hasMoved = true; // Zoom sempre conta como movimento
                     initialDistance = getDistance(e.touches[0], e.touches[1]);
                     initialScale = containerScale;
                     
@@ -418,14 +420,23 @@
             }, { passive: false });
 
             container.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 1 && !isZooming) {
-                    // Se começou a mover, ativar modo drag
+                const touch = e.touches[0];
+                const moveDistance = Math.sqrt(
+                    Math.pow(touch.clientX - touchStartPos.x, 2) + 
+                    Math.pow(touch.clientY - touchStartPos.y, 2)
+                );
+                
+                // Se moveu mais de 10px, não é um tap
+                if (moveDistance > 10) {
+                    hasMoved = true;
+                }
+                
+                if (e.touches.length === 1 && !isZooming && hasMoved) {
+                    // Drag with single finger
                     if (!isDragging) {
                         isDragging = true;
                     }
                     
-                    // Drag with single finger
-                    const touch = e.touches[0];
                     containerX = touch.clientX - startX;
                     containerY = touch.clientY - startY;
                     updateTransform();
@@ -462,6 +473,8 @@
             }, { passive: false });
 
             container.addEventListener('touchend', function(e) {
+                const touchDuration = Date.now() - touchStartTime;
+                
                 if (e.touches.length === 1) {
                     // Se sobrou apenas 1 dedo, transitar para modo drag
                     if (isZooming) {
@@ -473,19 +486,23 @@
                         const touch = e.touches[0];
                         startX = touch.clientX - containerX;
                         startY = touch.clientY - containerY;
+                        hasMoved = true; // Prevenir tap após zoom
                         
                         console.log('Transitioning from zoom to drag mode');
                     }
                 } else if (e.touches.length === 0) {
                     // Sem dedos no ecrã
-                    if (!isDragging && !isZooming) {
-                        // Foi um tap simples - toggle slideshow
+                    
+                    // Verificar se foi um tap válido (rápido, sem movimento, um dedo)
+                    if (!hasMoved && touchDuration < 300 && !isZooming && !isDragging) {
                         toggleSlideshow();
+                        console.log('Tap detected - toggling slideshow');
                     }
                     
                     isZooming = false;
                     isDragging = false;
                     lastTouchCenter = null;
+                    hasMoved = false;
                     
                     // Sempre voltar ao zoom original (1.0x) com transição suave
                     containerScale = 1;
@@ -496,8 +513,6 @@
                     setTimeout(() => {
                         container.style.transition = '';
                     }, 300);
-                    
-                    console.log('Reset to original size - Position:', containerX.toFixed(0), containerY.toFixed(0));
                 }
             });
 
@@ -513,9 +528,7 @@
 
             // Click para PC (equivalente ao tap)
             container.addEventListener('click', function(e) {
-                if (!isDragging && !isZooming) {
-                    toggleSlideshow();
-                }
+                toggleSlideshow();
             });
 
             document.addEventListener('mousemove', function(e) {
