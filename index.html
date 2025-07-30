@@ -55,6 +55,7 @@
             z-index: 1;
             cursor: grab;
             user-select: none;
+            touch-action: none;
         }
 
         .container:active {
@@ -71,26 +72,19 @@
             border-radius: 15px;
         }
 
-        .image-container {
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            margin-bottom: 1.5rem;
-            overflow: hidden;
-            border-radius: 15px;
-            touch-action: none;
-        }
-
         .contador img {
             width: 100%;
+            max-width: 500px;
             height: auto;
             min-height: 200px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             transition: opacity 0.5s ease-in-out;
+            margin-bottom: 1.5rem;
             display: block;
+            margin-left: auto;
+            margin-right: auto;
             object-fit: cover;
-            transform-origin: center center;
         }
 
         .time {
@@ -145,11 +139,8 @@
                 padding: 0.5rem;
             }
             
-            .image-container {
-                max-width: 250px;
-            }
-            
             .contador img {
+                max-width: 250px;
                 min-height: 130px;
             }
             
@@ -187,11 +178,8 @@
                 grid-auto-rows: 50px;
             }
             
-            .image-container {
-                max-width: 230px;
-            }
-            
             .contador img {
+                max-width: 230px;
                 min-height: 115px;
             }
             
@@ -247,9 +235,7 @@
 
     <div class="container">
         <div class="contador">
-            <div class="image-container">
-                <img src="" alt="Fotos do casal" id="gallery-img">
-            </div>
+            <img src="" alt="Fotos do casal" id="gallery-img">
             <h2>Timer para a eternidade</h2>
             <div class="time" id="contador"></div>
             <div class="quote">
@@ -266,7 +252,7 @@
             // Lista de todas as imagens da pasta images/
             const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
-            const imageContainer = document.querySelector('.image-container');
+            const container = document.querySelector('.container');
 
             // Variáveis para zoom do container
             let containerScale = 1;
@@ -418,11 +404,10 @@
             let isDragging = false;
             let startX, startY;
             let containerX = 0, containerY = 0;
-            const container = document.querySelector('.container');
 
             // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
-                // Só arrastar se for toque de um dedo e não estiver fazendo zoom
+                // Só arrastar se não estiver fazendo zoom
                 if (!isZooming) {
                     isDragging = true;
                     startX = e.clientX - containerX;
@@ -449,7 +434,7 @@
                 isDragging = false;
             });
 
-            // Touch events para mobile (apenas para arrastar o container quando não está fazendo zoom)
+            // Touch events para mobile (apenas para arrastar quando não está fazendo zoom)
             container.addEventListener('touchstart', function(e) {
                 // Só arrastar se for toque de um dedo e não estiver fazendo zoom
                 if (e.touches.length === 1 && !isZooming) {
