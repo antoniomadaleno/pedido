@@ -211,22 +211,6 @@
             to { opacity: 1; }
         }
 
-        .pause-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            font-size: 1.5rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-            pointer-events: none;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-
-        .pause-indicator.show {
-            opacity: 0.7;
-        }
-
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
@@ -249,8 +233,6 @@
         <img src="events/fmm.jpg" alt="Foto de fundo 13" class="background-photo">
     </div>
 
-    <div class="pause-indicator" id="pause-indicator">⏸️</div>
-    
     <div class="container">
         <div class="contador">
             <img src="" alt="Fotos do casal" id="gallery-img">
@@ -271,11 +253,6 @@
             const images = Array.from({length: 100}, (_, i) => `images/foto${i + 1}.jpg`);
             const galleryImg = document.getElementById('gallery-img');
             const container = document.querySelector('.container');
-            const pauseIndicator = document.getElementById('pause-indicator');
-
-            // Variáveis para slideshow pause/play
-            let slideshowInterval = null;
-            let isPaused = false;
 
             // Variáveis para transformações
             let containerScale = 1;
@@ -291,45 +268,6 @@
             // Limites
             const MIN_ZOOM = 0.4;
             const MAX_ZOOM = 2.5;
-
-            function startSlideshow() {
-                if (!slideshowInterval) {
-                    slideshowInterval = setInterval(alternarImagem, 1300);
-                    isPaused = false;
-                    
-                    // Mostrar ícone de play brevemente
-                    pauseIndicator.textContent = '▶️';
-                    pauseIndicator.classList.add('flash');
-                    
-                    // Esconder após 1.5 segundos
-                    setTimeout(() => {
-                        pauseIndicator.classList.remove('flash');
-                        setTimeout(() => {
-                            pauseIndicator.classList.remove('show');
-                        }, 500);
-                    }, 1500);
-                }
-            }
-
-            function pauseSlideshow() {
-                if (slideshowInterval) {
-                    clearInterval(slideshowInterval);
-                    slideshowInterval = null;
-                    isPaused = true;
-                    
-                    // Mostrar ícone de pause permanentemente
-                    pauseIndicator.textContent = '⏸️';
-                    pauseIndicator.classList.add('show');
-                }
-            }
-
-            function toggleSlideshow() {
-                if (isPaused) {
-                    startSlideshow();
-                } else {
-                    pauseSlideshow();
-                }
-            }
 
             function updateTransform() {
                 container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
@@ -388,26 +326,21 @@
             // Touch Events
             let startX, startY;
             let lastTouchCenter = null;
-            let touchStartTime = 0;
-            let touchStartPos = { x: 0, y: 0 };
-            let hasMoved = false;
 
             container.addEventListener('touchstart', function(e) {
-                touchStartTime = Date.now();
-                hasMoved = false;
-                
                 if (e.touches.length === 1) {
-                    // Single touch
-                    const touch = e.touches[0];
-                    touchStartPos = { x: touch.clientX, y: touch.clientY };
-                    startX = touch.clientX - containerX;
-                    startY = touch.clientY - containerY;
+                    // Single touch - drag (só se não estiver já em modo zoom)
+                    if (!isZooming) {
+                        isDragging = true;
+                        const touch = e.touches[0];
+                        startX = touch.clientX - containerX;
+                        startY = touch.clientY - containerY;
+                    }
                 } else if (e.touches.length === 2) {
                     // Two fingers - zoom
                     e.preventDefault();
                     isZooming = true;
                     isDragging = false;
-                    hasMoved = true; // Zoom sempre conta como movimento
                     initialDistance = getDistance(e.touches[0], e.touches[1]);
                     initialScale = containerScale;
                     
@@ -420,23 +353,9 @@
             }, { passive: false });
 
             container.addEventListener('touchmove', function(e) {
-                const touch = e.touches[0];
-                const moveDistance = Math.sqrt(
-                    Math.pow(touch.clientX - touchStartPos.x, 2) + 
-                    Math.pow(touch.clientY - touchStartPos.y, 2)
-                );
-                
-                // Se moveu mais de 10px, não é um tap
-                if (moveDistance > 10) {
-                    hasMoved = true;
-                }
-                
-                if (e.touches.length === 1 && !isZooming && hasMoved) {
+                if (e.touches.length === 1 && isDragging && !isZooming) {
                     // Drag with single finger
-                    if (!isDragging) {
-                        isDragging = true;
-                    }
-                    
+                    const touch = e.touches[0];
                     containerX = touch.clientX - startX;
                     containerY = touch.clientY - startY;
                     updateTransform();
@@ -473,8 +392,6 @@
             }, { passive: false });
 
             container.addEventListener('touchend', function(e) {
-                const touchDuration = Date.now() - touchStartTime;
-                
                 if (e.touches.length === 1) {
                     // Se sobrou apenas 1 dedo, transitar para modo drag
                     if (isZooming) {
@@ -486,23 +403,14 @@
                         const touch = e.touches[0];
                         startX = touch.clientX - containerX;
                         startY = touch.clientY - containerY;
-                        hasMoved = true; // Prevenir tap após zoom
                         
                         console.log('Transitioning from zoom to drag mode');
                     }
                 } else if (e.touches.length === 0) {
-                    // Sem dedos no ecrã
-                    
-                    // Verificar se foi um tap válido (rápido, sem movimento, um dedo)
-                    if (!hasMoved && touchDuration < 300 && !isZooming && !isDragging) {
-                        toggleSlideshow();
-                        console.log('Tap detected - toggling slideshow');
-                    }
-                    
+                    // Sem dedos no ecrã - voltar ao tamanho original
                     isZooming = false;
                     isDragging = false;
                     lastTouchCenter = null;
-                    hasMoved = false;
                     
                     // Sempre voltar ao zoom original (1.0x) com transição suave
                     containerScale = 1;
@@ -513,6 +421,8 @@
                     setTimeout(() => {
                         container.style.transition = '';
                     }, 300);
+                    
+                    console.log('Reset to original size - Position:', containerX.toFixed(0), containerY.toFixed(0));
                 }
             });
 
@@ -524,11 +434,6 @@
                     startY = e.clientY - containerY;
                     e.preventDefault();
                 }
-            });
-
-            // Click para PC (equivalente ao tap)
-            container.addEventListener('click', function(e) {
-                toggleSlideshow();
             });
 
             document.addEventListener('mousemove', function(e) {
@@ -583,7 +488,7 @@
 
             // Timers
             setInterval(atualizarContador, 1000);
-            startSlideshow(); // Iniciar slideshow
+            setInterval(alternarImagem, 1300);
             atualizarContador();
 
             galleryImg.addEventListener('load', function() {
