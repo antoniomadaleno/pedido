@@ -258,10 +258,12 @@
             let containerScale = 1;
             let initialDistance = 0;
             let isZooming = false;
+            let lastScale = 1;  // Para tracking mais suave
             
             // Thresholds de zoom
-            const MIN_ZOOM = 0.5;  // Zoom mínimo permitido
+            const MIN_ZOOM = 0.3;  // Zoom mínimo permitido
             const MAX_ZOOM = 3.0;  // Zoom máximo permitido
+            const ZOOM_SENSITIVITY = 0.5; // Sensibilidade do zoom (menor = mais suave)
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -322,6 +324,7 @@
                     e.preventDefault();
                     isZooming = true;
                     initialDistance = getDistance(e.touches[0], e.touches[1]);
+                    lastScale = containerScale; // Guardar escala atual
                 }
             }, { passive: false });
 
@@ -330,12 +333,18 @@
                     e.preventDefault();
                     
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                    const scaleChange = currentDistance / initialDistance;
-                    let newScale = containerScale * scaleChange;
+                    let scaleChange = currentDistance / initialDistance;
+                    
+                    // Aplicar sensibilidade para zoom mais suave
+                    scaleChange = 1 + (scaleChange - 1) * ZOOM_SENSITIVITY;
+                    
+                    let newScale = lastScale * scaleChange;
                     
                     // Aplicar thresholds de zoom
                     newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
                     
+                    // Aplicar o zoom imediatamente
+                    containerScale = newScale;
                     container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${newScale})`;
                     container.style.transition = '';
                 }
@@ -345,25 +354,22 @@
                 if (isZooming) {
                     isZooming = false;
                     
-                    // Atualizar escala atual baseada no transform
-                    const transform = window.getComputedStyle(container).transform;
-                    if (transform !== 'none') {
-                        const matrix = new DOMMatrix(transform);
-                        let newScale = matrix.a; // a é o valor de scale X
-                        
-                        // Aplicar thresholds finais
-                        if (newScale < MIN_ZOOM) {
-                            newScale = MIN_ZOOM;
-                        } else if (newScale > MAX_ZOOM) {
-                            newScale = MAX_ZOOM;
-                        }
-                        
-                        containerScale = newScale;
+                    // A escala já foi atualizada durante o movimento
+                    // Aplicar thresholds finais por segurança
+                    if (containerScale < MIN_ZOOM) {
+                        containerScale = MIN_ZOOM;
+                    } else if (containerScale > MAX_ZOOM) {
+                        containerScale = MAX_ZOOM;
                     }
                     
-                    // Adicionar transição suave mantendo a posição atual
-                    container.style.transition = 'transform 0.3s ease-out';
+                    // Adicionar transição suave
+                    container.style.transition = 'transform 0.2s ease-out';
                     container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
+                    
+                    // Remover transição após um breve delay
+                    setTimeout(() => {
+                        container.style.transition = '';
+                    }, 200);
                 }
             });
 
