@@ -329,11 +329,13 @@
 
             container.addEventListener('touchstart', function(e) {
                 if (e.touches.length === 1) {
-                    // Single touch - drag
-                    isDragging = true;
-                    const touch = e.touches[0];
-                    startX = touch.clientX - containerX;
-                    startY = touch.clientY - containerY;
+                    // Single touch - drag (só se não estiver já em modo zoom)
+                    if (!isZooming) {
+                        isDragging = true;
+                        const touch = e.touches[0];
+                        startX = touch.clientX - containerX;
+                        startY = touch.clientY - containerY;
+                    }
                 } else if (e.touches.length === 2) {
                     // Two fingers - zoom
                     e.preventDefault();
@@ -390,7 +392,22 @@
             }, { passive: false });
 
             container.addEventListener('touchend', function(e) {
-                if (e.touches.length === 0) {
+                if (e.touches.length === 1) {
+                    // Se sobrou apenas 1 dedo, transitar para modo drag
+                    if (isZooming) {
+                        isZooming = false;
+                        lastTouchCenter = null;
+                        
+                        // Configurar para modo drag com o dedo restante
+                        isDragging = true;
+                        const touch = e.touches[0];
+                        startX = touch.clientX - containerX;
+                        startY = touch.clientY - containerY;
+                        
+                        console.log('Transitioning from zoom to drag mode');
+                    }
+                } else if (e.touches.length === 0) {
+                    // Sem dedos no ecrã - limpar tudo
                     isZooming = false;
                     isDragging = false;
                     lastTouchCenter = null;
