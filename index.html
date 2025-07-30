@@ -254,16 +254,24 @@
             const galleryImg = document.getElementById('gallery-img');
             const container = document.querySelector('.container');
 
-            // Variáveis para zoom do container
+            // Variáveis para transformações
             let containerScale = 1;
-            let initialDistance = 0;
+            let containerX = 0;
+            let containerY = 0;
             let isZooming = false;
-            let lastScale = 1;  // Para tracking mais suave
+            let isDragging = false;
+
+            // Zoom variables
+            let initialDistance = 0;
+            let initialScale = 1;
             
-            // Thresholds de zoom
-            const MIN_ZOOM = 0.3;  // Zoom mínimo permitido
-            const MAX_ZOOM = 3.0;  // Zoom máximo permitido
-            const ZOOM_SENSITIVITY = 2.0; // Sensibilidade do zoom (maior = mais responsivo)
+            // Limites
+            const MIN_ZOOM = 0.4;
+            const MAX_ZOOM = 2.5;
+
+            function updateTransform() {
+                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
+            }
 
             function alternarImagem() {
                 if (images.length <= 1) return;
@@ -271,7 +279,6 @@
                 galleryImg.style.opacity = '0';
 
                 setTimeout(() => {
-                    // Tenta a próxima imagem
                     currentImageIndex = (currentImageIndex + 1) % images.length;
                     let attempts = 0;
                     
@@ -282,7 +289,6 @@
                             galleryImg.style.opacity = '1';
                         };
                         img.onerror = function() {
-                            // Se a imagem não existir, tenta a próxima
                             attempts++;
                             if (attempts < images.length) {
                                 currentImageIndex = (currentImageIndex + 1) % images.length;
@@ -311,116 +317,63 @@
                     `${anos}a, ${meses}m, ${dias}d, ${horas}h, ${minutos}m, ${segundos}s`;
             }
 
-            // Função para calcular distância entre dois pontos de toque
             function getDistance(touch1, touch2) {
                 const dx = touch1.clientX - touch2.clientX;
                 const dy = touch1.clientY - touch2.clientY;
                 return Math.sqrt(dx * dx + dy * dy);
             }
 
-            // Funcionalidade de zoom para todo o container no mobile
+            // Touch Events
             container.addEventListener('touchstart', function(e) {
-                if (e.touches.length === 2) {
+                if (e.touches.length === 1) {
+                    // Single touch - drag
+                    isDragging = true;
+                    const touch = e.touches[0];
+                    startX = touch.clientX - containerX;
+                    startY = touch.clientY - containerY;
+                } else if (e.touches.length === 2) {
+                    // Two fingers - zoom
                     e.preventDefault();
                     isZooming = true;
+                    isDragging = false;
                     initialDistance = getDistance(e.touches[0], e.touches[1]);
-                    lastScale = containerScale; // Guardar escala atual
+                    initialScale = containerScale;
                 }
             }, { passive: false });
 
             container.addEventListener('touchmove', function(e) {
-                if (e.touches.length === 2 && isZooming) {
+                if (e.touches.length === 1 && isDragging && !isZooming) {
+                    // Drag
+                    const touch = e.touches[0];
+                    containerX = touch.clientX - startX;
+                    containerY = touch.clientY - startY;
+                    updateTransform();
+                } else if (e.touches.length === 2 && isZooming) {
+                    // Zoom
                     e.preventDefault();
-                    
                     const currentDistance = getDistance(e.touches[0], e.touches[1]);
-                    let scaleChange = currentDistance / initialDistance;
+                    const scaleChange = currentDistance / initialDistance;
                     
-                    // Aplicar sensibilidade - agora mais responsivo
-                    scaleChange = 1 + (scaleChange - 1) * ZOOM_SENSITIVITY;
-                    
-                    let newScale = lastScale * scaleChange;
-                    
-                    // Aplicar thresholds de zoom
+                    let newScale = initialScale * scaleChange;
                     newScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newScale));
                     
-                    // Aplicar o zoom imediatamente e atualizar containerScale
                     containerScale = newScale;
-                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
-                    container.style.transition = '';
+                    updateTransform();
                 }
             }, { passive: false });
 
             container.addEventListener('touchend', function(e) {
-                if (isZooming) {
+                if (e.touches.length === 0) {
                     isZooming = false;
-                    
-                    // Garantir que a escala atual é preservada
-                    // containerScale já foi atualizado durante touchmove
-                    
-                    // Aplicar thresholds finais por segurança
-                    containerScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, containerScale));
-                    
-                    // Aplicar sem transição para evitar "snap back"
-                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
-                    container.style.transition = '';
-                    
-                    console.log('Zoom final:', containerScale); // Para debug
+                    isDragging = false;
+                    console.log('Final scale:', containerScale.toFixed(2));
                 }
             });
 
-            // Double tap para resetar zoom do container (mantendo posição)
-            let lastTap = 0;
-            container.addEventListener('touchend', function(e) {
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTap;
-                
-                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0 && !isDragging && !isZooming) {
-                    e.preventDefault();
-                    containerScale = 1;
-                    // Resetar zoom mas manter a posição atual
-                    container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(1)`;
-                    container.style.transition = 'transform 0.3s ease-out';
-                }
-                
-                lastTap = currentTime;
-            });
-
-            // Tentar carregar a primeira imagem
-            if (images.length > 0) {
-                const img = new Image();
-                img.onload = function() {
-                    galleryImg.src = images[0];
-                    galleryImg.style.opacity = '1';
-                };
-                img.onerror = function() {
-                    // Se a primeira imagem não existir, tenta encontrar uma que exista
-                    alternarImagem();
-                };
-                img.src = images[0];
-            }
-
-            // Atualizar contador a cada segundo
-            setInterval(atualizarContador, 1000);
-            
-            // Alternar imagem a cada 1 segundos
-            setInterval(alternarImagem, 1300);
-            
-            // Primeira atualização do contador
-            atualizarContador();
-
-            // Adicionar evento para carregar nova imagem quando a atual terminar de carregar
-            galleryImg.addEventListener('load', function() {
-                this.classList.add('fade-in');
-            });
-
-            // Funcionalidade de drag para mover o container principal
-            let isDragging = false;
+            // Mouse Events para PC
             let startX, startY;
-            let containerX = 0, containerY = 0;
 
-            // Mouse events para PC
             container.addEventListener('mousedown', function(e) {
-                // Só arrastar se não estiver fazendo zoom
                 if (!isZooming) {
                     isDragging = true;
                     startX = e.clientX - containerX;
@@ -435,45 +388,47 @@
                 
                 containerX = e.clientX - startX;
                 containerY = e.clientY - startY;
-                
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
+                updateTransform();
             });
 
             document.addEventListener('mouseup', function() {
                 isDragging = false;
             });
 
-            document.addEventListener('mouseleave', function() {
-                isDragging = false;
-            });
-
-            // Touch events para mobile (apenas para arrastar quando não está fazendo zoom)
-            container.addEventListener('touchstart', function(e) {
-                // Só arrastar se for toque de um dedo e não estiver fazendo zoom
-                if (e.touches.length === 1 && !isZooming) {
-                    isDragging = true;
-                    const touch = e.touches[0];
-                    startX = touch.clientX - containerX;
-                    startY = touch.clientY - containerY;
+            // Double tap para reset
+            let lastTap = 0;
+            container.addEventListener('touchend', function(e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                
+                if (tapLength < 500 && tapLength > 0 && e.touches.length === 0) {
+                    containerScale = 1;
+                    updateTransform();
                 }
-            }, { passive: true });
-
-            document.addEventListener('touchmove', function(e) {
-                if (!isDragging || e.touches.length > 1 || isZooming) return;
                 
-                const touch = e.touches[0];
-                containerX = touch.clientX - startX;
-                containerY = touch.clientY - startY;
-                
-                container.style.transform = `translate(calc(-50% + ${containerX}px), calc(-50% + ${containerY}px)) scale(${containerScale})`;
-            }, { passive: true });
-
-            document.addEventListener('touchend', function() {
-                isDragging = false;
+                lastTap = currentTime;
             });
 
-            document.addEventListener('touchcancel', function() {
-                isDragging = false;
+            // Carregar primeira imagem
+            if (images.length > 0) {
+                const img = new Image();
+                img.onload = function() {
+                    galleryImg.src = images[0];
+                    galleryImg.style.opacity = '1';
+                };
+                img.onerror = function() {
+                    alternarImagem();
+                };
+                img.src = images[0];
+            }
+
+            // Timers
+            setInterval(atualizarContador, 1000);
+            setInterval(alternarImagem, 1300);
+            atualizarContador();
+
+            galleryImg.addEventListener('load', function() {
+                this.classList.add('fade-in');
             });
         });
     </script>
